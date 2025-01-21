@@ -79,9 +79,9 @@ elseif (arg[0] == DJCONTROL) then
 			end
 
 			if (arg[3] == 127) then -- RIT down
-				icomRIT = icomRIT - 20 		-- Decrement global RIT offset by 5 Hz
+				icomRIT = icomRIT - 20 		-- Decrement global RIT offset by 20 Hz
 			elseif (arg[3] == 1) then -- RIT Up
-				icomRIT = icomRIT + 20 		-- Increment global RIT offset by 5 Hz
+				icomRIT = icomRIT + 20 		-- Increment global RIT offset by 20 Hz
 			end
 			if icomRIT < -9999 then
 				icomRIT = -9999
