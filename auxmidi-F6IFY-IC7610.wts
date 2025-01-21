@@ -1,0 +1,300 @@
+
+-- Version 2.6 P. Nouchi le 24 Janvier 2024
+-- Only for the IC7610
+
+RadioIcomID = "FEFE98" -- IC7610
+STEP4RIT = 5 -- to slow down the RIT et les VFOs: Augmenter cette valeure pour ralentir
+STEP4JOGA = 10 --the step for JOG A depend Step variable (see WT_DJ_BTN_MODE)
+
+local arg = {};
+
+for i, j, k, l in string.gmatch(wtArg, "(%d+)/(-?%d+)/(%d+)/(%d+)") do
+	arg[0] = i + 0;	-- The "+ 0" ensures numbers in arg
+	arg[1] = j + 0;
+	arg[2] = k + 0;
+	arg[3] = l + 0;
+end
+if (WT_DJ_JOGORPOT == nil) then  wtScript:Call("DJConstants") end
+-- arg[0] = Device
+-- arg[1]  = Status
+-- arg[2] = Control
+-- arg[3] = Value
+
+local function SlowDown(ritStep, STEP4RIT)
+	if (ritStep == nil) then 
+		ritStep = 0
+		return False
+	elseif (ritStep < STEP4RIT) then 
+		ritStep = (ritStep + 1)
+		return False
+	elseif (ritStep >= STEP4RIT) then
+		ritStep = 0
+	end
+ 	return True
+end
+
+--if (arg[0] ~= 0) then return end -- Assume the DJ console is device 0
+
+local FreqRadio1 = nil
+local cmdHex1 = nil
+local Pitch = nil
+local PWRLevel = nil
+local FilterWidth = nil
+local FilterINWidth = nil
+local freqIcom = nil
+local freq = nil
+FreqGlobal =  "00"
+
+--*** Deal with FootSwitch if any ***
+if (arg[0] == FOOTSWITCH) then
+	if (arg[3] == 127) then -- FootSwitch down
+		wtRadio:SendHex(RadioIcomID .. "E01C0001FD") -- PTT ON 
+		wtRadio:SendHex(RadioIcomID .. "E01A05003101FD") -- Ptt Time-out 3mn
+	elseif (arg[3] == 0) then -- FootSwitch Up
+		wtApp:Sleep(100)
+		wtRadio:SendHex(RadioIcomID .. "E01C0000FD") -- PTT Off
+		wtRadio:SendHex(RadioIcomID .. "E01C0000FD") -- PTT Off
+	end
+	return
+--*** Now DJControl ***
+elseif (arg[0] == DJCONTROL) then
+	if (arg[1] == WT_DJ_JOGORPOT) then	-- Rotate Jog Wheel or Pot
+		if Step == nil then
+			Step = false
+		end
+
+	--***Jog B is RIT ***
+		if (arg[2] == WT_DJ_JOGB)  then -- Jog Wheel B
+			if (ritStep == nil) then 
+				ritStep = 0
+				return
+			elseif (ritStep < STEP4RIT) then 
+				ritStep = (ritStep + 1)
+				return
+			elseif (ritStep >= STEP4RIT) then
+				ritStep = 0
+			end
+			if icomRIT == nil then
+				icomRIT = 0
+			end
+
+			if (arg[3] == 127) then -- RIT down
+				icomRIT = icomRIT - 20 		-- Decrement global RIT offset by 5 Hz
+			elseif (arg[3] == 1) then -- RIT Up
+				icomRIT = icomRIT + 20 		-- Increment global RIT offset by 5 Hz
+			end
+			if icomRIT < -9999 then
+				icomRIT = -9999
+			end
+			if icomRIT < 0 then
+				zz = "01"			-- Negative offset
+			else
+				zz = "00"
+			end
+	-- Turn RIT ON in case it is off
+			wtRadio:SendHex(RadioIcomID .. "E0210101FD")
+
+			local absRIT = math.abs(icomRIT)
+			local yy = string.format("%02d", math.floor(absRIT / 100))
+			local xx = string.format("%02d", absRIT % 100)
+			wtRadio:SendHex(RadioIcomID .. "E02100" .. xx .. yy .. zz .. "FD")
+			return -1			-- No further keystroke procesing
+
+	--*** Now Jog A ***
+		elseif ((arg[2] == WT_DJ_JOGA) and Step) then -- Step is 100Hz
+			if (ritStep == nil) then 
+				ritStep = 0
+				return
+			elseif (ritStep < STEP4RIT) then 
+				ritStep = (ritStep + 1)
+				return
+			elseif (ritStep >= STEP4RIT) then
+				ritStep = 0
+			end
+			--[[
+			if (SlowDown(ritStep, STEP4RIT) == False) then
+				return
+			end]]
+			local freqIcom1 = wtRadio:GetFreq() * 10
+			if (arg[3] == 127) then 
+				wtRadio:SetFreq((freqIcom1 - 1) /10)
+			elseif (arg[3] == 1) then
+				wtRadio:SetFreq((freqIcom1 + 1) /10) -- VFO Up or Down  100 Hz
+			end
+			return
+		elseif ((arg[2] == WT_DJ_JOGA) and not(Step)) then -- Step is 10 Hz
+			if (ritStep == nil) then 
+				ritStep = 0
+				return
+			elseif (ritStep < STEP4RIT) then 
+				ritStep = (ritStep + 1)
+				return
+			elseif (ritStep >= STEP4RIT) then
+				ritStep = 0
+			end
+			freqIcom = wtRadio:GetRawFreq() --read frequency with 1Hz resolution
+			if (arg[3] == 127) then -- down (see constant above)Hz asked
+				freqIcom = freqIcom - STEP4JOGA
+			elseif (arg[3] == 1) then -- up (see constant above)Hz asked
+				freqIcom = freqIcom + STEP4JOGA
+			end
+			freq = string.format("%0010d", freqIcom)
+			x1 = string.sub( freq, -2)
+			x2 = string.sub( freq, -4, -3)
+			x3 = string.sub( freq, -6, -5)
+			x4 = string.sub( freq, -8, -7)
+			wtRadio:SendHex(RadioIcomID .. "E005" .. x1 .. x2 .. x3 .. x4 .. "FD")
+			--wtApp:AlertBox(freq .. "\n" .. x1 ..  ", " .. x2 .. ", " .. x3 .. ", " .. x4)
+			return
+		-- *** Potentiomètre for Radio 1 ***
+		elseif (arg[2] == WT_DJ_POTVOLUMEA) then -- Rotate Volume A
+			Pitch = string.format( "%04d", arg[3] * 2 + 0)
+			cmdHex1 = (RadioIcomID .. "E01409" .. Pitch .. "FD") -- cw Pitch 
+		elseif (arg[2] == WT_DJ_POTBASSA) then -- Rotate Bass A
+			BalLevel = string.format( "%04d", (arg[3] + 0) * 2)
+			cmdHex1 = (RadioIcomID .. "E0140F" .. BalLevel .. "FD") -- Now Break-in delay from v1.4 (was Balance level) 
+		elseif (arg[2] == WT_DJ_POTMEDIUMA) then -- Rotate Medium A
+			FilterINWidth = string.format( "%04d", (arg[3] + 0)  * 2)
+			cmdHex1 = (RadioIcomID .. "E01407" .. FilterINWidth .. "FD") -- PBT Inside Filter Width
+		elseif (arg[2] == WT_DJ_POTMEDIUMB) then -- Rotate Medium B
+			FilterWidth = string.format( "%04d", (arg[3] + 0)  * 2)
+			cmdHex1 = (RadioIcomID .. "E01408" .. FilterWidth .. "FD") -- PBT Outside Filter Width
+		elseif (arg[2] == WT_DJ_POTVOLUMEB) then -- Rotate Volume B
+			SideTone = string.format( "%04d", ((arg[3] + 0)  * 2) / 5)
+			if (wtQso:GetModeId() == WT_MODE_CW) then 
+				cmdHex1 = (RadioIcomID .. "E01A050225" .. SideTone .. "FD") -- CW Side Tone level
+			else 							--SSB or RTTY
+				cmdHex1 = (RadioIcomID .. "E01415" .. SideTone .. "FD") -- Monitor level
+			end
+	--[[		if arg[3] == 0 then -- Preamp OFF
+				cmdHex1 = (RadioIcomID .. "E0160200FD") -- Preamplifier off
+			elseif (arg[3] == 64) then
+				cmdHex1 = (RadioIcomID .. "E0160201FD") -- Preamp 1 
+			elseif (arg[3] == 127) then 
+				cmdHex1 = (RadioIcomID .. "E0160202FD") -- Preamp 2
+			end]]
+		elseif (arg[2] == WT_DJ_POTBASSB) then -- Rotate Bass B
+			if arg[3] == 0 then -- Attenuateur OFF
+				cmdHex1 = (RadioIcomID .. "E01100FD") -- Attenuateur OFF
+			elseif (arg[3] == 64) then
+				cmdHex1 = (RadioIcomID .. "E01106FD") -- Attenuateur 6db 
+			elseif (arg[3] == 98) then
+				cmdHex1 = (RadioIcomID .. "E01112FD") -- Attenuateur 12db
+			elseif (arg[3] == 127) then 
+				cmdHex1 = (RadioIcomID .. "E01118FD") -- Attenuateur 18db
+			end
+	-- *** Crossfader ***
+		elseif (arg[2] == WT_DJ_CROSSFADER) then -- Move Slider
+			if (wtQso:GetModeId() == WT_MODE_CW) then -- Change CW Speed in CW
+				-- CW speed between 20 and 40
+				wtKeyer:SetCwSpeed((20 + (20 * arg[3] / 127)));
+			else -- change power level in SSB or RTTY
+				PWRLevel = string.format( "%04d", 80 * arg[3] / 127) -- Power level 0 to 32 W to protect amplifier
+				if (PWRLevel ~= nil) then
+					cmdHex1 = (RadioIcomID .. "E0140A" .. PWRLevel .. "FD") 
+				end
+			end
+		end
+	-- *** Push buttons Radio1 ***
+	elseif (arg[1] == WT_DJ_PUSH_BUTTON) then -- Push buttons
+		if (arg[2] == WT_DJ_BTN_3A) then -- 3A
+			if (arg[3] == 127) then 
+				cmdHex1 = (RadioIcomID .. "E01C0001FD") -- PTT ON 
+			elseif (arg[3] == 0) then
+				wtRadio:SendHex(RadioIcomID .. "E01C0000FD") -- PTT OFF
+				cmdHex1 = (RadioIcomID .. "E01C0000FD") -- PTT OFF
+			end
+		elseif ((arg[2] == WT_DJ_BTN_1A) and (arg[3] == 127)) then --  1A
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD") -- Set Mike and voice memory both actif  
+			cmdHex1 = (RadioIcomID .. "E0280000FD") --  Escape from Voice memory
+						
+		elseif ((arg[2] == WT_DJ_BTN_CUE_A) and (arg[3] == 127)) then
+			cmdHex1 = (RadioIcomID .. "E007B1FD") --  Vfo A = B
+		elseif ((arg[2] == WT_DJ_BTN_SYNC_A) and (arg[3] == 127)) then
+			-- nVFO = 0
+			cmdHex1 = (RadioIcomID .. "E007D0FD") --  Vfo A
+		elseif ((arg[2] == WT_DJ_BTN_PLAY_A) and (arg[3] == 127)) then
+			-- nVFO = 1
+			cmdHex1 = (RadioIcomID .. "E007D1FD") --  Vfo B
+		elseif ((arg[2] == WT_DJ_BTN_REC) and (arg[3] == 127)) then
+			cmdHex1 = (RadioIcomID .. "E007C1FD") --  Dual Watch ON
+		elseif ((arg[2] == WT_DJ_BTN_SHIFTREC) and (arg[3] == 127)) then
+			cmdHex1 = (RadioIcomID .. "E007C0FD") --  Dual Watch OFF
+		elseif ((arg[2] == WT_DJ_BTN_AUTOMIX) and (arg[3] == 127)) then
+			cmdHex1 = (RadioIcomID .. "E0164501FD") --  Monitor ON
+			cmdHex1 = (RadioIcomID .. "E01A05008401FD") --  Monitor CW beep ON
+		elseif ((arg[2] == WT_DJ_BTN_SHIFTAUTOMIX) and (arg[3] == 127)) then
+			cmdHex1 = (RadioIcomID .. "E0164500FD") --  Monitor OFF
+		elseif ((arg[2] == WT_DJ_BTN_2A) and (arg[3] == 127)) then
+			if not(wtRadio:IsSplit()) then
+				cmdHex1 = (RadioIcomID .. "E00F01FD") -- split ON 
+			else
+				cmdHex1 = (RadioIcomID .. "E00F00FD") -- split OFF
+			end
+		elseif ((arg[2] == WT_DJ_BTN_4A) and (arg[3] == 127)) then -- 4A
+			if (modeFilter == nil) then modeFilter = "01" -- change filter every press on the 3A button
+			elseif (modeFilter == "01") then modeFilter = "02" 
+			elseif (modeFilter == "02") then modeFilter = "03"
+			elseif (modeFilter == "03") then modeFilter = "01" 
+			end
+			if (wtQso:GetModeId() == WT_MODE_CW) then 		-- assuming CW
+				wtRadio:SendHex(RadioIcomID .. "E00603" .. modeFilter .. "FD") --  CW filters
+				return
+			elseif (wtQso:GetModeId() == WT_MODE_RTTY) then
+				wtRadio:SendHex(RadioIcomID .. "E00604" .. modeFilter .. "FD") --  RTTY filters
+				return
+			elseif (wtRadio:GetFreq() <= 7200) then 	-- assuming LSB
+				wtRadio:SendHex(RadioIcomID .. "E00600" .. modeFilter .. "FD") --  LSB filters
+				return
+			else								-- assuming USB
+				cmdHex1 = (RadioIcomID .. "E00601" .. modeFilter .. "FD") --  USB filters
+			end
+		elseif ((arg[2] == WT_DJ_BTN_PLAY_B)  and (arg[3] == 127)) then
+			cmdHex1 = (RadioIcomID .. "E0210101FD") --  RIT On
+		elseif ((arg[2] == WT_DJ_BTN_CUE_B) and (arg[3] == 127)) then
+			icomRIT = 0
+			cmdHex1 = (RadioIcomID .. "E02100000000FD") --  RIT Clear
+		elseif ( arg[2] == WT_DJ_BTN_SYNC_B) then
+	--		icomRIT = 0
+			cmdHex1 = (RadioIcomID .. "E0210100FD") --  RIT Off
+		elseif ((arg[2] == WT_DJ_BTN_1B) and (arg[3] == 127)) then
+			--cmdHex1 = (RadioIcomID .. "E0120000FD") --  Select Ant 1 (RX Ant Off)
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280001FD") --  Play Voice memory 1
+		elseif ((arg[2] == WT_DJ_BTN_2B) and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280002FD") --  Play Voice memory 2
+		elseif ((arg[2] == WT_DJ_BTN_3B)  and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280003FD") --  Play Voice memory 3
+		elseif ((arg[2] == WT_DJ_BTN_4B) and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280004FD") --  Play Voice memory 4
+		elseif ((arg[2] == WT_DJ_BTN_SHIFT1B) and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280005FD") --  Play Voice memory 5
+		elseif ((arg[2] == WT_DJ_BTN_SHIFT2B) and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280006FD") --  Play Voice memory 6
+		elseif ((arg[2] == WT_DJ_BTN_SHIFT3B)  and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280007FD") --  Play Voice memory 7
+		elseif ((arg[2] == WT_DJ_BTN_SHIFT4B) and (arg[3] == 127)) then
+			wtRadio:SendHex(RadioIcomID .. "E01A05009104FD")
+			cmdHex1 = (RadioIcomID .. "E0280008FD") --  Play Voice memory 8
+		elseif ((arg[2] == WT_DJ_BTN_MODE) and (arg[3] == 127)) then -- Bouton REC (toggle) --> VFO Step for vfo (10 or 100Hz)
+			if (Step == false) then
+				Step = true
+			else
+				Step = false
+			end
+		end
+	end
+end
+--if (FreqRadio1) then
+	--wtRadio:SetFreq(FreqRadio1)
+--else
+if (cmdHex1) then 
+	wtRadio:SendHex(cmdHex1)
+end
+return -1

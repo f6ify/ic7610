@@ -1,0 +1,83 @@
+wtMidi script AUXMIDI/arg [1to4] command in Win-test Thanks to Laurent Haas F6FVY
+SO1R Version
+This script allows the DJ Compact console to control the Icom IC7610
+
+-Version 2.6 P. Nouchi le 23 Janvier 2024
+	Works with the wtRadio:GetRawFreq() fonction (Win-test lua API 1.9.0 & after)
+	For Win-test 4.46.0 dev rev 911 and after
+-Version 2.5 P. Nouchi le 16 février 2022
+	Add the change of vfo step on Mode button
+-Version 2.4 P. Nouchi le 16 février 2022
+	cosmetic change
+-Version 2.3 P. Nouchi le 22 février 2021
+	Slow down VFOs and RIT
+-Version 2.2 P. Nouchi le 19 janvier 2021
+	Add an escape key to stop pre-recoded messages
+	8 Messages could be sent
+-Version 2.1 P. Nouchi le 13 janvier 2021
+	Send memory of the transceiver in SSB
+	Crossfader is now Power in SSB and RTTY and CW speed in CW
+-Version 2.0 P. Nouchi le 4 janvier 2021 Need 4.34.0-dev rev 790 et + 
+	Filtres (button 4A) ok for RTTY and SSB
+	PTT is now on button 3A (asked by F6KRK/F8CRH)
+	Footswitch added (dev10) need wtMidi_1_2_dev_serial
+-Version 1.9 P. Nouchi le 28 decembre 2020
+	Crossfader is CW Speed in CW and Power Level in SSB
+	Volume B is Sidetone level in CW and Monitor Level in SSB or RTTY
+-Version 1.8 P. Nouchi le 28 decembre 2020
+	for the IC7610 @ F8KCF
+-Version 1.7 P. Nouchi le 15 decembre 2020
+	Rotate volumeB sert the Side Tone Level (0 to 100%)
+	PTT sur le bouton 4A (Rx quand vous relachez le bouton)
+-Version 1.6 P. Nouchi le 25 novembre 2020
+	Filters commutation now works on SSB
+-Version 1.5 P. Nouchi le 23 novembre 2020 
+	use wtRadio in place of wtRadio1
+	VFO step is now 10Hz when use shift+JogA 
+-Version 1.4 P. Nouchi le 18 novembre 2020 
+	Add  Break-in délai on Pot Bass(A)
+-Version 1.3 P. Nouchi le 17 novembre 2020 
+	Add  CW Pitch
+-Version 1.2 P. Nouchi le 16 novembre 2020 
+	Add filters switches
+-Version 1.1 P. Nouchi le 13 novembre 2020 
+	Add RX Ant button 3B and 4B
+-Version 1.0 P. Nouchi le 11 novembre 2020 
+	Add RIT commands (only for IC7300 and after) 
+	JOG B and three buttons under 
+-Version 0.9 P. Nouchi le 10 novembre 2020 
+	Add IC7600, IC7610 and bugs correction
+-Version 0.8 P. Nouchi le 04 novembre 2020 
+	Add IC7300 for F8KCF Radio Club
+-Version 0.7 P. Nouchi le 25 Juin 2020
+------------------------------------------------
+First get the correct Icom radio ID
+
+		- Jog Au pas de 100 Hz
+		- jog B RIT au pas de 1 Hz 
+		- Shift + Jog A pas de 1 Khz
+		- All functions is off with the same button + Shift
+		- Bouton REC = Dual Watch (Shift + REC --> Dual Watch OFF)
+		- Bouton SYNC (A) --> select VFO A
+		- Bouton :> (A) --> Select VFO B
+		- Bouton CUE (A) --> A=B
+		- Bouton 1A --> Stop pre-recorded messages
+		- Bouton 2A --> Split ON/Off with Shift
+		- Bouton 3A --> PTT
+		- Bouton 4A --> filters choice 250hz/500hz/1.2khz
+		- Bouton 1B --> Send Memory T1 - T5 with shift button
+		- Bouton 2B --> Send Memory T2 - T6 with shift button
+		- Bouton 3B --> Send Memory T3 - T7 with shift button
+		- Bouton 4B --> Send Memory T4 - T8 with shift button
+		- Bouton AUTOMIX --> Monitor ON/OFF with Shift
+		- Bouton MODE --> VFO Step
+		- Bouton :> B --> RIT On
+		- Bouton CUE (B) --> RIT Clear
+		- Bouton SYNC (B) --> RIT Off
+		- Rotate Volume (A) change the CW Pitch (was AF Level)
+		- Rotate Bass (A)  Break-in delay (was change the balance Level (Used with Dual Watch to set a RIT on old ICOM radio))		
+		- Rotate Medium (A) pot. change the Inside Pass Band Tuning 
+		- Rotate Medium (B) pot. change the Outside Pass Band Tuning 
+		- Rotate Volume (B) pot. change the preamplifier 0ff, Preamp 1 (middle),  Preamp 2 (Full right)
+		- Rotate Bass (B) pot. change the attenuator 0, 6 (middle),  12 or 18 dB (Full right)
+		- Cross fader is for Power 0 (Full Left) to 100 W (full right) in SSB and CW Speed in CW
