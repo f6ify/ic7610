@@ -1,4 +1,4 @@
-
+-- Version 2.7 P. Nouchi le 21 Janvier 2025
 -- Version 2.6 P. Nouchi le 24 Janvier 2024
 -- Only for the IC7610
 
@@ -60,7 +60,7 @@ if (arg[0] == FOOTSWITCH) then
 elseif (arg[0] == DJCONTROL) then
 	if (arg[1] == WT_DJ_JOGORPOT) then	-- Rotate Jog Wheel or Pot
 		if Step == nil then
-			Step = false
+			Step = true
 		end
 
 	--***Jog B is RIT ***
@@ -101,7 +101,7 @@ elseif (arg[0] == DJCONTROL) then
 			return -1			-- No further keystroke procesing
 
 	--*** Now Jog A ***
-		elseif ((arg[2] == WT_DJ_JOGA) and Step) then -- Step is 100Hz
+		elseif ((arg[2] == WT_DJ_JOGA) ) --and Step) then -- Step is 100Hz
 			if (ritStep == nil) then 
 				ritStep = 0
 				return
@@ -122,31 +122,32 @@ elseif (arg[0] == DJCONTROL) then
 				wtRadio:SetFreq((freqIcom1 + 1) /10) -- VFO Up or Down  100 Hz
 			end
 			return
-		elseif ((arg[2] == WT_DJ_JOGA) and not(Step)) then -- Step is 10 Hz
-			if (ritStep == nil) then 
-				ritStep = 0
-				return
-			elseif (ritStep < STEP4RIT) then 
-				ritStep = (ritStep + 1)
-				return
-			elseif (ritStep >= STEP4RIT) then
-				ritStep = 0
-			end
-			freqIcom = wtRadio:GetRawFreq() --read frequency with 1Hz resolution
-			if (arg[3] == 127) then -- down (see constant above)Hz asked
-				freqIcom = freqIcom - STEP4JOGA
-			elseif (arg[3] == 1) then -- up (see constant above)Hz asked
-				freqIcom = freqIcom + STEP4JOGA
-			end
-			freq = string.format("%0010d", freqIcom)
-			x1 = string.sub( freq, -2)
-			x2 = string.sub( freq, -4, -3)
-			x3 = string.sub( freq, -6, -5)
-			x4 = string.sub( freq, -8, -7)
-			wtRadio:SendHex(RadioIcomID .. "E005" .. x1 .. x2 .. x3 .. x4 .. "FD")
-			--wtApp:AlertBox(freq .. "\n" .. x1 ..  ", " .. x2 .. ", " .. x3 .. ", " .. x4)
-			return
-		-- *** Potentiomètre for Radio 1 ***
+		-- I commaent out the rest because the wtRadio:GetRawFreq() doesn't work with the IC7610
+		-- elseif ((arg[2] == WT_DJ_JOGA) and not(Step)) then -- Step is 10 Hz
+		-- 	if (ritStep == nil) then 
+		-- 		ritStep = 0
+		-- 		return
+		-- 	elseif (ritStep < STEP4RIT) then 
+		-- 		ritStep = (ritStep + 1)
+		-- 		return
+		-- 	elseif (ritStep >= STEP4RIT) then
+		-- 		ritStep = 0
+		-- 	end
+		-- 	freqIcom = wtRadio:GetRawFreq() --read frequency with 1Hz resolution
+		-- 	if (arg[3] == 127) then -- down (see constant above)Hz asked
+		-- 		freqIcom = freqIcom - STEP4JOGA
+		-- 	elseif (arg[3] == 1) then -- up (see constant above)Hz asked
+		-- 		freqIcom = freqIcom + STEP4JOGA
+		-- 	end
+		-- 	freq = string.format("%0010d", freqIcom)
+		-- 	x1 = string.sub( freq, -2)
+		-- 	x2 = string.sub( freq, -4, -3)
+		-- 	x3 = string.sub( freq, -6, -5)
+		-- 	x4 = string.sub( freq, -8, -7)
+		-- 	wtRadio:SendHex(RadioIcomID .. "E005" .. x1 .. x2 .. x3 .. x4 .. "FD")
+		-- 	--wtApp:AlertBox(freq .. "\n" .. x1 ..  ", " .. x2 .. ", " .. x3 .. ", " .. x4)
+		-- 	return
+		-- *** Potentiomï¿½tre for Radio 1 ***
 		elseif (arg[2] == WT_DJ_POTVOLUMEA) then -- Rotate Volume A
 			Pitch = string.format( "%04d", arg[3] * 2 + 0)
 			cmdHex1 = (RadioIcomID .. "E01409" .. Pitch .. "FD") -- cw Pitch 
@@ -226,11 +227,12 @@ elseif (arg[0] == DJCONTROL) then
 		elseif ((arg[2] == WT_DJ_BTN_SHIFTAUTOMIX) and (arg[3] == 127)) then
 			cmdHex1 = (RadioIcomID .. "E0164500FD") --  Monitor OFF
 		elseif ((arg[2] == WT_DJ_BTN_2A) and (arg[3] == 127)) then
-			if not(wtRadio:IsSplit()) then
-				cmdHex1 = (RadioIcomID .. "E00F01FD") -- split ON 
-			else
-				cmdHex1 = (RadioIcomID .. "E00F00FD") -- split OFF
-			end
+			wtRadio:SendHex(RadioIcomID .. "E007B0FD")   -- Swap VFOs
+			-- if not(wtRadio:IsSplit()) then
+			-- 	cmdHex1 = (RadioIcomID .. "E00F01FD") -- split ON 
+			-- else
+			-- 	cmdHex1 = (RadioIcomID .. "E00F00FD") -- split OFF
+			-- end
 		elseif ((arg[2] == WT_DJ_BTN_4A) and (arg[3] == 127)) then -- 4A
 			if (modeFilter == nil) then modeFilter = "01" -- change filter every press on the 3A button
 			elseif (modeFilter == "01") then modeFilter = "02" 
