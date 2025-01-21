@@ -2,14 +2,16 @@ wtMidi script AUXMIDI/arg [1to4] command in Win-test Thanks to Laurent Haas F6FV
 SO1R Version
 This script allows the DJ Compact console to control the Icom IC7610
 
+-Version 2.7 P. Nouchi le 21 Janvier 2025
+	Add swap vfo A and B in the button 2A
 -Version 2.6 P. Nouchi le 23 Janvier 2024
 	Works with the wtRadio:GetRawFreq() fonction (Win-test lua API 1.9.0 & after)
 	For Win-test 4.46.0 dev rev 911 and after
--Version 2.5 P. Nouchi le 16 février 2022
+-Version 2.5 P. Nouchi le 16 fï¿½vrier 2022
 	Add the change of vfo step on Mode button
--Version 2.4 P. Nouchi le 16 février 2022
+-Version 2.4 P. Nouchi le 16 fï¿½vrier 2022
 	cosmetic change
--Version 2.3 P. Nouchi le 22 février 2021
+-Version 2.3 P. Nouchi le 22 fï¿½vrier 2021
 	Slow down VFOs and RIT
 -Version 2.2 P. Nouchi le 19 janvier 2021
 	Add an escape key to stop pre-recoded messages
@@ -35,7 +37,7 @@ This script allows the DJ Compact console to control the Icom IC7610
 	use wtRadio in place of wtRadio1
 	VFO step is now 10Hz when use shift+JogA 
 -Version 1.4 P. Nouchi le 18 novembre 2020 
-	Add  Break-in délai on Pot Bass(A)
+	Add  Break-in dï¿½lai on Pot Bass(A)
 -Version 1.3 P. Nouchi le 17 novembre 2020 
 	Add  CW Pitch
 -Version 1.2 P. Nouchi le 16 novembre 2020 
@@ -62,7 +64,7 @@ First get the correct Icom radio ID
 		- Bouton :> (A) --> Select VFO B
 		- Bouton CUE (A) --> A=B
 		- Bouton 1A --> Stop pre-recorded messages
-		- Bouton 2A --> Split ON/Off with Shift
+		- Bouton 2A --> Swap VFOs    (was Split ON/Off with Shift)
 		- Bouton 3A --> PTT
 		- Bouton 4A --> filters choice 250hz/500hz/1.2khz
 		- Bouton 1B --> Send Memory T1 - T5 with shift button
